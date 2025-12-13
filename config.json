@@ -1,0 +1,15 @@
+{
+    "bot_token": "",
+    "tracked_players": [
+        "ILA",
+        "\ud83e\udd1017",
+        "BaPeHuK\u271f"
+    ],
+    "notification_channel_id": 1449319041423638600,
+    "authorized_users": [
+        660719822199586818,
+        923255447882960956,
+        658348111076393022
+    ],
+    "check_interval": 10
+}
