@@ -3,13 +3,25 @@
     "tracked_players": [
         "ILA",
         "\ud83e\udd1017",
-        "BaPeHuK\u271f"
+        "BaPeHuK\u271f",
+        "Korol37441",
+        "\u0445\u043e\u043c\u044f\u043a",
+        "solitude",
+        "\u6b7b\u4ea1",
+        "Billy",
+        "Nobilis",
+        "\u0411\u0430\u0441\u0443\u0442\u0430",
+        "sakitamoshi",
+        "unclear",
+        "frenture",
+        "savik30"
     ],
     "notification_channel_id": 1449319041423638600,
     "authorized_users": [
         660719822199586818,
         923255447882960956,
-        658348111076393022
+        658348111076393022,
+        1040612669935325290
     ],
-    "check_interval": 10
+    "check_interval": 15
 }

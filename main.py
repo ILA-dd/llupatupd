@@ -46,6 +46,55 @@ def get_server_key(addr_list):
     # Use the first one as the key
     return sorted_addrs[0]
 
+def get_flag(loc, server_name=""):
+    """Convert location code to flag emoji with improved accuracy and German server detection"""
+    if not loc:
+        return "🏳️"
+    
+    try:
+        # Handle format like "EUR:DE" or "ASI:CN" - take the part after colon
+        if ':' in loc:
+            code = loc.split(':')[-1].strip()
+        else:
+            code = loc.strip()
+        
+        # Debug log
+        logger.info(f"Processing location: '{loc}' -> code: '{code}' for server: '{server_name}'")
+        
+        # Special handling for German servers
+        # Check if server name contains German indicators
+        german_indicators = ['GER', 'GERMANY', 'BERLIN', 'FRANKFURT', 'MUNICH']
+        if any(indicator in server_name.upper() for indicator in german_indicators):
+            logger.info(f"Detected German server by name: {server_name}")
+            return "🇩🇪"
+        
+        # Check if location indicates Germany
+        if loc.upper() in ['GER', 'GERMANY', 'EUR:GER', 'DE']:
+            logger.info(f"Detected German location code: {loc}")
+            return "🇩🇪"
+        
+        # Ensure it's exactly 2 characters and uppercase
+        if len(code) != 2:
+            logger.warning(f"Invalid country code length: '{code}' (length: {len(code)})")
+            return "🏳️"
+        
+        code = code.upper()
+        
+        # Validate it's only letters (ISO 3166-1 alpha-2)
+        if not code.isalpha():
+            logger.warning(f"Country code contains non-alpha characters: '{code}'")
+            return "🏳️"
+        
+        # Convert to regional indicator symbols
+        # A = U+1F1E6, B = U+1F1E7, etc.
+        flag = chr(ord(code[0]) + 127397) + chr(ord(code[1]) + 127397)
+        logger.info(f"Generated flag for code '{code}': {flag}")
+        return flag
+        
+    except Exception as e:
+        logger.error(f"Error converting location '{loc}' to flag: {e}")
+        return "🏳️"
+
 def is_authorized():
     async def predicate(ctx):
         if ctx.author.id not in config.get('authorized_users', []):
@@ -168,6 +217,9 @@ async def send_grouped_notification(channel, players, server_addr):
     map_name = s_info.get('info', {}).get('map', {}).get('name', 'Unknown Map')
     country = s_info.get('location', 'UNK')
     
+    # Debug log full server info
+    logger.info(f"Server info - Name: '{server_name}', Location: '{country}', Map: '{map_name}'")
+    
     # Process address
     import re
     raw_addr = s_info.get('addresses', [''])[0]
@@ -177,22 +229,8 @@ async def send_grouped_notification(channel, players, server_addr):
     else:
         clean_addr = raw_addr
 
-    def get_flag(loc):
-        if not loc: return "🏳️"
-        try:
-            if ':' in loc:
-                code = loc.split(':')[-1]
-            else:
-                code = loc
-            
-            if len(code) == 2:
-                code = code.upper()
-                return chr(ord(code[0]) + 127397) + chr(ord(code[1]) + 127397)
-            return "🏳️"
-        except:
-            return "🏳️"
-
-    flag = get_flag(country)
+    # Pass server name to get_flag for better detection
+    flag = get_flag(country, server_name)
     
     # Build description with all players
     player_names = [p['name'] for p in players]
@@ -224,15 +262,18 @@ async def send_grouped_notification(channel, players, server_addr):
     for player in players[:2]:  # Limit to 2 players
         skin_name = player['info'].get('skin', {}).get('name', 'default')
         player_name = player['name']
-        print(f"Preparing player: name={player_name} (type: {type(player_name)}), skin={skin_name}")
+        logger.info(f"Preparing player: name={player_name} (type: {type(player_name)}), skin={skin_name}")
         skin_names.append(skin_name)
         display_names.append(player_name)
     
+    # ВАЖНО: Передаем server_name в функцию создания изображения
+    logger.info(f"Creating composite image for server: '{server_name}'")
     img_buffer = await image_utils.create_composite_image(
         api.session, 
         map_name, 
         skin_names, 
-        display_names
+        display_names,
+        server_name  # Pass server name for custom background detection
     )
     file = discord.File(fp=img_buffer, filename="notification.png")
     
@@ -606,8 +647,8 @@ async def track_help(ctx):
         color=discord.Color.blue()
     )
     
-    embed.add_field(name="✅ !track add <name>", value="Добавить игрока в трекер", inline=False)
-    embed.add_field(name="❌ !track remove <name>", value="Удалить игрока из трекера", inline=False)
+    embed.add_field(name="✅ !track add <n>", value="Добавить игрока в трекер", inline=False)
+    embed.add_field(name="❌ !track remove <n>", value="Удалить игрока из трекера", inline=False)
     embed.add_field(name="📜 !track list", value="Показать список игроков в трекере", inline=False)
     embed.add_field(name="📊 !tracker_status", value="Показать статус трекера и онлайн игроков", inline=False)
     embed.add_field(name="📢 !setchannel", value="Установить текущий канал для уведомлений", inline=False)
